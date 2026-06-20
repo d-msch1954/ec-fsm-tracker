@@ -1,0 +1,19 @@
+# Excel source files — never commit; always import locally at runtime
+*.xlsx
+*.xls
+*.xlsm
+*.xlsb
+
+# Node
+node_modules/
+
+# Test fixtures with real data
+test/fixtures/
+
+# Claude Code internals
+.claude/
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
