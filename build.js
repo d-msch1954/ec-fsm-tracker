@@ -1,16 +1,23 @@
-#!/usr/bin/env node
-// Copies the self-contained HTML to docs/index.html for GitHub Pages.
-// When src/ decomposition is added later, update this to inline src/core.js,
-// src/ui.js, src/styles.css, and vendor/xlsx.full.min.js into the template.
-
-import { copyFileSync, mkdirSync } from 'fs';
+// build.js — inlines src/ files into single self-contained HTML
+import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const root = dirname(fileURLToPath(import.meta.url));
-const src  = join(root, 'EC_FieldService_Tracker.html');
-const dest = join(root, 'docs', 'index.html');
+
+const template = readFileSync(join(root, 'src', 'app.template.html'), 'utf8');
+const styles   = readFileSync(join(root, 'src', 'styles.css'), 'utf8');
+const xlsx     = readFileSync(join(root, 'vendor', 'xlsx.full.min.js'), 'utf8');
+const core     = readFileSync(join(root, 'src', 'core.js'), 'utf8');
+const ui       = readFileSync(join(root, 'src', 'ui.js'), 'utf8');
+
+const out = template
+  .replace('<!--INLINE:styles-->', `<style>\n${styles}\n</style>`)
+  .replace('<!--INLINE:xlsx-->',   `<script>\n${xlsx}\n</script>`)
+  .replace('<!--INLINE:core-->',   `<script>\n${core}\n</script>`)
+  .replace('<!--INLINE:ui-->',     `<script>\n${ui}\n</script>`);
 
 mkdirSync(join(root, 'docs'), { recursive: true });
-copyFileSync(src, dest);
-console.log(`Built → docs/index.html`);
+writeFileSync(join(root, 'EC_FieldService_Tracker.html'), out, 'utf8');
+writeFileSync(join(root, 'docs', 'index.html'), out, 'utf8');
+console.log(`Built → ${Math.round(out.length / 1024)}KB`);
