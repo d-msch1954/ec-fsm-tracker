@@ -5,15 +5,14 @@
 })(typeof self !== 'undefined' ? self : this, function() {
   'use strict';
 
-  var STALENESS_DAYS    = 30;
-  var MEETING_WINDOW_DAYS = 30;
+  var STALENESS_DAYS = 30;
 
   var KNOWN_HEADERS = [
-    'company name', 'account classification', 'priority focus',
-    'status / next steps', 'interacted with?', 'next meeting date',
-    'cluster poc', 'key account poc', 'client poc',
-    'existing vendors', 'existing work done', 'vendor pipeline status',
-    'action items', 'last updated date', 'last updated by', 'notes', 'alliance'
+    'cluster', 'company', 'priority',
+    'engagement status', 'engagement type', 'additional info required',
+    'next steps', 'action owner', 'deloitte poc',
+    'cluster poc', 'existing vendors', 'existing work done',
+    'pipeline status', 'pipeline notes', 'last updated', 'notes'
   ];
 
   // ── Parsing ───────────────────────────────────────────────────────────────
@@ -61,26 +60,25 @@
         return row.some(function(c) { return String(c).trim() !== ''; });
       })
       .map(function(row) {
-        var pri = get(row, 'priority focus').toUpperCase();
+        var pri = get(row, 'priority').toUpperCase();
         if (['HIGH', 'MEDIUM', 'LOW'].indexOf(pri) === -1) pri = 'UNSET';
         return {
-          company:         get(row, 'company name'),
-          classification:  get(row, 'account classification'),
-          priority:        pri,
-          status:          get(row, 'status / next steps'),
-          interacted:      get(row, 'interacted with?').toLowerCase() === 'yes',
-          nextMeeting:     parseDate(get(row, 'next meeting date')),
-          clusterPOC:      get(row, 'cluster poc'),
-          keyPOC:          get(row, 'key account poc'),
-          clientPOC:       get(row, 'client poc'),
-          existingVendors: get(row, 'existing vendors'),
-          existingWork:    get(row, 'existing work done'),
-          pipeline:        get(row, 'vendor pipeline status'),
-          action:          get(row, 'action items'),
-          lastUpdatedDate: parseDate(get(row, 'last updated date')),
-          lastUpdatedBy:   get(row, 'last updated by'),
-          notes:           get(row, 'notes'),
-          alliance:        get(row, 'alliance'),
+          cluster:          get(row, 'cluster'),
+          company:          get(row, 'company'),
+          priority:         pri,
+          engagementStatus: get(row, 'engagement status'),
+          engagementType:   get(row, 'engagement type'),
+          additionalInfo:   get(row, 'additional info required').toLowerCase() === 'yes',
+          nextSteps:        get(row, 'next steps'),
+          actionOwner:      get(row, 'action owner'),
+          deloittePOC:      get(row, 'deloitte poc'),
+          clusterPOC:       get(row, 'cluster poc'),
+          existingVendors:  get(row, 'existing vendors'),
+          existingWork:     get(row, 'existing work done'),
+          pipelineStatus:   get(row, 'pipeline status'),
+          pipelineNotes:    get(row, 'pipeline notes'),
+          lastUpdated:      parseDate(get(row, 'last updated')),
+          notes:            get(row, 'notes'),
         };
       })
       .filter(function(a) { return a.company; });
@@ -119,25 +117,20 @@
   // ── KPIs ──────────────────────────────────────────────────────────────────
 
   function computeKPIs(accounts) {
-    var today = new Date(); today.setHours(0, 0, 0, 0);
-    var in30 = new Date(today); in30.setDate(today.getDate() + MEETING_WINDOW_DAYS);
-
     var total        = accounts.length;
     var highPriority = accounts.filter(function(a) { return a.priority === 'HIGH'; }).length;
-    var engaged      = accounts.filter(function(a) { return a.interacted; }).length;
-    var upcoming     = accounts.filter(function(a) {
-      return a.nextMeeting && a.nextMeeting >= today && a.nextMeeting <= in30;
-    });
-    upcoming.sort(function(a, b) { return a.nextMeeting - b.nextMeeting; });
+    var active       = accounts.filter(function(a) {
+      return (a.engagementStatus || '').toLowerCase() === 'active';
+    }).length;
+    var needsInfo    = accounts.filter(function(a) { return a.additionalInfo; }).length;
 
     return {
       total:        total,
       highPriority: highPriority,
       highPct:      total ? Math.round(highPriority / total * 100) : 0,
-      engaged:      engaged,
-      engagedPct:   total ? Math.round(engaged / total * 100) : 0,
-      meetingsIn30: upcoming.length,
-      nextMeeting:  upcoming.length ? upcoming[0].nextMeeting : null,
+      active:       active,
+      activePct:    total ? Math.round(active / total * 100) : 0,
+      needsInfo:    needsInfo,
     };
   }
 
@@ -151,47 +144,29 @@
     }, {});
   }
 
-  function groupByAlliance(accounts) {
-    var result = {};
-    accounts.forEach(function(a) {
-      if (!a.alliance) return;
-      a.alliance.split(/[,;]/).forEach(function(s) {
-        var al = s.trim();
-        if (al) result[al] = (result[al] || 0) + 1;
-      });
-    });
-    return result;
-  }
-
   // ── Filtering & sorting ───────────────────────────────────────────────────
 
   var SEARCH_FIELDS = [
-    'company', 'classification', 'status',
-    'clusterPOC', 'keyPOC', 'clientPOC', 'pipeline', 'notes'
+    'cluster', 'company', 'engagementStatus', 'engagementType',
+    'nextSteps', 'actionOwner', 'deloittePOC', 'clusterPOC',
+    'pipelineStatus', 'pipelineNotes', 'notes'
   ];
 
   function filterAccounts(accounts, filters) {
-    var search          = (filters.search || '').toLowerCase();
-    var classifications = filters.classifications || [];
-    var priorities      = filters.priorities || [];
-    var alliances       = filters.alliances || [];
-    var interacted      = (filters.interacted !== undefined && filters.interacted !== null)
-                          ? filters.interacted : null;
+    var search             = (filters.search || '').toLowerCase();
+    var clusters           = filters.clusters || [];
+    var priorities         = filters.priorities || [];
+    var engagementStatuses = filters.engagementStatuses || [];
 
     return accounts.filter(function(a) {
       if (search && !SEARCH_FIELDS.some(function(f) {
         return (a[f] || '').toLowerCase().indexOf(search) !== -1;
       })) return false;
 
-      if (classifications.length && classifications.indexOf(a.classification) === -1) return false;
+      if (clusters.length && clusters.indexOf(a.cluster) === -1) return false;
       if (priorities.length && priorities.indexOf(a.priority) === -1) return false;
+      if (engagementStatuses.length && engagementStatuses.indexOf(a.engagementStatus) === -1) return false;
 
-      if (alliances.length) {
-        var tags = splitAlliance(a.alliance);
-        if (!alliances.some(function(al) { return tags.indexOf(al) !== -1; })) return false;
-      }
-
-      if (interacted !== null && a.interacted !== interacted) return false;
       return true;
     });
   }
@@ -210,35 +185,6 @@
 
   // ── Text helpers ──────────────────────────────────────────────────────────
 
-  function splitAlliance(text) {
-    if (!text) return [];
-    return text.split(/[,;]/).map(function(s) { return s.trim(); }).filter(Boolean);
-  }
-
-  function parsePipelineBullets(text) {
-    if (!text) return [];
-    var idx = text.toLowerCase().indexOf('pipeline:');
-    var src = idx >= 0 ? text.slice(idx + 9) : text;
-    return src.split(/[\n\r]+/)
-      .map(function(l) { return l.replace(/^[-•*]\s*/, '').trim(); })
-      .filter(Boolean);
-  }
-
-  function parseActionItems(text) {
-    if (!text) return [];
-    var re = /\[(\d{2}\/\d{2})\]\s*([^\[]+)/g;
-    var items = [], m;
-    while ((m = re.exec(text)) !== null) {
-      items.push({ date: m[1], text: m[2].trim() });
-    }
-    if (items.length) return items;
-    // Fallback: plain lines
-    return text.split(/[\n\r]+/)
-      .map(function(l) { return l.trim(); })
-      .filter(Boolean)
-      .map(function(t) { return { date: null, text: t }; });
-  }
-
   function extractEmails(text) {
     if (!text) return [];
     return (text.match(/[\w.+\-]+@[\w.\-]+\.\w+/g) || []);
@@ -252,18 +198,13 @@
   // ── Public API ────────────────────────────────────────────────────────────
 
   return {
-    parseWorkbook:        parseWorkbook,
-    computeKPIs:          computeKPIs,
-    groupBy:              groupBy,
-    groupByAlliance:      groupByAlliance,
-    filterAccounts:       filterAccounts,
-    sortAccounts:         sortAccounts,
-    splitAlliance:        splitAlliance,
-    parsePipelineBullets: parsePipelineBullets,
-    parseActionItems:     parseActionItems,
-    extractEmails:        extractEmails,
-    formatDate:           formatDate,
-    STALENESS_DAYS:       STALENESS_DAYS,
-    MEETING_WINDOW_DAYS:  MEETING_WINDOW_DAYS,
+    parseWorkbook:   parseWorkbook,
+    computeKPIs:     computeKPIs,
+    groupBy:         groupBy,
+    filterAccounts:  filterAccounts,
+    sortAccounts:    sortAccounts,
+    extractEmails:   extractEmails,
+    formatDate:      formatDate,
+    STALENESS_DAYS:  STALENESS_DAYS,
   };
 });

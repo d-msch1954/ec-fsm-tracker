@@ -404,6 +404,21 @@ body {
 .tag--mining   { background: #FFF7ED; color: #C2410C; }
 .tag--default  { background: #F3F4F6; color: var(--muted); }
 
+/* ── Engagement status badges ───────────────────────────────────────── */
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.status--active     { background: #DBEAFE; color: #1E40AF; }
+.status--monitoring { background: #FEF3C7; color: #92400E; }
+.status--hold       { background: #F3F4F6; color: #6B7280; }
+.status--restricted { background: #FEE2E2; color: #991B1B; }
+.status--notstarted { background: #F3F4F6; color: #9CA3AF; }
+
 /* ── Detail panel ───────────────────────────────────────────────────── */
 .detail-panel {
   width: var(--panel-w);
