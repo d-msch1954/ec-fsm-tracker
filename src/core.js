@@ -24,9 +24,11 @@
     };
   }
 
+  var ACCOUNT_SHEET_NAMES = ['lean view', 'account tracker', 'accounts', 'tracker'];
+
   function parseAccountsSheet(wb) {
     var sheetName = wb.SheetNames.find(function(n) {
-      return n.trim().toLowerCase() === 'lean view';
+      return ACCOUNT_SHEET_NAMES.indexOf(n.trim().toLowerCase()) !== -1;
     }) || wb.SheetNames[0];
     var ws = wb.Sheets[sheetName];
     if (!ws) return [];

@@ -11,11 +11,12 @@ const xlsx     = readFileSync(join(root, 'vendor', 'xlsx.full.min.js'), 'utf8');
 const core     = readFileSync(join(root, 'src', 'core.js'), 'utf8');
 const ui       = readFileSync(join(root, 'src', 'ui.js'), 'utf8');
 
+// Use function replacer to prevent $ in content being treated as special patterns
 const out = template
-  .replace('<!--INLINE:styles-->', `<style>\n${styles}\n</style>`)
-  .replace('<!--INLINE:xlsx-->',   `<script>\n${xlsx}\n</script>`)
-  .replace('<!--INLINE:core-->',   `<script>\n${core}\n</script>`)
-  .replace('<!--INLINE:ui-->',     `<script>\n${ui}\n</script>`);
+  .replace('<!--INLINE:styles-->', () => `<style>\n${styles}\n</style>`)
+  .replace('<!--INLINE:xlsx-->',   () => `<script>\n${xlsx}\n</script>`)
+  .replace('<!--INLINE:core-->',   () => `<script>\n${core}\n</script>`)
+  .replace('<!--INLINE:ui-->',     () => `<script>\n${ui}\n</script>`);
 
 mkdirSync(join(root, 'docs'), { recursive: true });
 writeFileSync(join(root, 'EC_FieldService_Tracker.html'), out, 'utf8');
