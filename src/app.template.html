@@ -67,12 +67,13 @@
         <h1 class="view-title">Accounts</h1>
         <span class="record-count" id="recordCount"></span>
       </div>
-      <div class="toolbar">
-        <input class="search-input" id="searchInput" type="text" placeholder="Search accounts, POCs, status…">
-        <div class="filter-chips" id="filterChips"></div>
-        <button class="btn-clear-filters" id="clearFilters" style="display:none">✕ Clear filters</button>
+      <input class="search-input" id="searchInput" type="text" placeholder="Search accounts, POCs, status…" style="margin-bottom:16px;width:100%">
+      <div class="accounts-layout">
+        <aside class="filter-sidebar" id="filterSidebar"></aside>
+        <div class="accounts-main">
+          <div id="accountsTable"></div>
+        </div>
       </div>
-      <div id="accountsTable"></div>
     </div>
 
     <div class="view" id="view-alliances" style="display:none">
