@@ -15,7 +15,7 @@
       engagementStatuses: [],
     },
     sort: { field: 'company', dir: 'asc' },
-    chipsBuilt:        false,
+    sidebarBuilt:      false,
   };
 
   // ── Utility ───────────────────────────────────────────────────────────────
@@ -64,6 +64,24 @@
       return '<span class="pill" style="background:#FEE2E2;color:#991B1B">' + esc(val) + '</span>';
     }
     return '<span style="color:var(--muted);font-size:12px">' + esc(val) + '</span>';
+  }
+
+  function logoHtml(company, size) {
+    size = size || 32;
+    var domain   = EC.inferDomain(company);
+    var initials = EC.companyInitials(company);
+    var color    = EC.nameToColor(company);
+    var avatarCss = 'width:' + size + 'px;height:' + size + 'px;border-radius:6px;background:' + color +
+      ';color:#fff;display:inline-flex;align-items:center;justify-content:center;' +
+      'font-size:' + Math.round(size * 0.38) + 'px;font-weight:700;flex-shrink:0;letter-spacing:-0.5px';
+    var avatarHtml = '<span style="' + avatarCss + '">' + esc(initials) + '</span>';
+    if (!domain) return avatarHtml;
+    return '<img src="https://logo.clearbit.com/' + esc(domain) + '"' +
+      ' style="width:' + size + 'px;height:' + size + 'px;border-radius:6px;object-fit:contain;' +
+      'background:#fff;border:1px solid var(--border);flex-shrink:0"' +
+      ' loading="lazy" alt=""' +
+      ' onerror="this.onerror=null;this.outerHTML=this.dataset.fb"' +
+      ' data-fb="' + esc(avatarHtml) + '">';
   }
 
   function priorityPill(p) {
@@ -120,7 +138,7 @@
         }
         state.accounts  = parsed.accounts;
         state.alliances = parsed.alliances;
-        state.chipsBuilt = false;
+        state.sidebarBuilt = false;
         localStorage.setItem('ec_last_file', file.name);
         document.getElementById('importFilename').textContent = file.name;
         enableNav();
@@ -224,7 +242,10 @@
       : '';
 
     document.getElementById('panelBody').innerHTML =
-      '<div class="panel-company">' + esc(account.company) + '</div>' +
+      '<div class="company-cell" style="gap:12px;margin-bottom:8px">' +
+        logoHtml(account.company, 40) +
+        '<div class="panel-company" style="margin-bottom:0">' + esc(account.company) + '</div>' +
+      '</div>' +
       '<div class="panel-badges">' +
         '<span class="' + clusterTag(account.cluster) + '">' + esc(account.cluster || '—') + '</span>' +
         priorityPill(account.priority) +
@@ -279,6 +300,9 @@
         }
         if (c === 'lastUpdated') {
           return '<td>' + esc(EC.formatDate(a.lastUpdated)) + '</td>';
+        }
+        if (c === 'company') {
+          return '<td><div class="company-cell">' + logoHtml(a.company, 32) + '<span>' + esc(a.company || '—') + '</span></div></td>';
         }
         return '<td>' + esc(a[c] || '—') + '</td>';
       }).join('');
@@ -424,7 +448,7 @@
           if (key === 'clusters')            state.filters.clusters            = [val];
           else if (key === 'priorities')     state.filters.priorities          = [val];
           else if (key === 'engagementStatuses') state.filters.engagementStatuses = [val];
-          state.chipsBuilt = false;
+          state.sidebarBuilt = false;
           navigate('accounts');
         }
       });
@@ -443,64 +467,110 @@
   // ── Accounts view ─────────────────────────────────────────────────────────
 
   function renderAccounts() {
-    buildFilterChips();
-    syncChipState();
+    buildFilterSidebar();
+    syncSidebarState();
     document.getElementById('searchInput').value = state.filters.search;
     applyFilters();
   }
 
-  function buildFilterChips() {
-    if (state.chipsBuilt) return;
-    state.chipsBuilt = true;
-    var chips = document.getElementById('filterChips');
-    chips.innerHTML = '';
+  function buildFilterSidebar() {
+    if (state.sidebarBuilt) return;
+    state.sidebarBuilt = true;
+    var sidebar = document.getElementById('filterSidebar');
+    sidebar.innerHTML = '';
 
     var priorities = ['HIGH', 'MEDIUM', 'LOW', 'UNSET'];
-
-    var clusters = [];
-    var statuses = [];
+    var clusters = [], statuses = [];
     var seenC = {}, seenS = {};
     state.accounts.forEach(function(a) {
-      if (a.cluster && !seenC[a.cluster]) {
-        seenC[a.cluster] = true;
-        clusters.push(a.cluster);
-      }
-      if (a.engagementStatus && !seenS[a.engagementStatus]) {
-        seenS[a.engagementStatus] = true;
-        statuses.push(a.engagementStatus);
-      }
+      if (a.cluster && !seenC[a.cluster]) { seenC[a.cluster] = true; clusters.push(a.cluster); }
+      if (a.engagementStatus && !seenS[a.engagementStatus]) { seenS[a.engagementStatus] = true; statuses.push(a.engagementStatus); }
     });
     clusters.sort();
     statuses.sort();
 
-    function addChips(values, filterKey) {
+    var header = document.createElement('div');
+    header.className = 'filter-sidebar-header';
+    header.innerHTML = '<span class="filter-sidebar-title">Filters</span>' +
+      '<button class="filter-clear-all" id="clearAllFilters">Clear all</button>';
+    sidebar.appendChild(header);
+
+    document.getElementById('clearAllFilters').addEventListener('click', function() {
+      state.filters = { search: '', clusters: [], priorities: [], engagementStatuses: [] };
+      document.getElementById('searchInput').value = '';
+      syncSidebarState();
+      applyFilters();
+    });
+
+    function addSection(title, values, filterKey, labelFn) {
+      var section = document.createElement('div');
+      section.className = 'filter-section';
+      var titleEl = document.createElement('div');
+      titleEl.className = 'filter-section-title';
+      titleEl.dataset.section = filterKey;
+      titleEl.textContent = title;
+      section.appendChild(titleEl);
+
       values.forEach(function(v) {
-        var el = document.createElement('button');
-        el.className = 'chip';
-        el.textContent = v === 'UNSET' ? 'TBD' : v;
-        el.dataset.value = v;
-        el.dataset.filter = filterKey;
-        el.addEventListener('click', function() {
+        var label = document.createElement('label');
+        label.className = 'filter-check';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.dataset.value = v;
+        cb.dataset.filter = filterKey;
+        cb.addEventListener('change', function() {
           var arr = state.filters[filterKey];
           var idx = arr.indexOf(v);
-          if (idx === -1) arr.push(v); else arr.splice(idx, 1);
-          el.classList.toggle('chip--active', arr.indexOf(v) !== -1);
+          if (cb.checked && idx === -1) arr.push(v);
+          else if (!cb.checked && idx !== -1) arr.splice(idx, 1);
+          syncSidebarState();
           applyFilters();
         });
-        chips.appendChild(el);
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(labelFn ? labelFn(v) : v));
+        section.appendChild(label);
       });
+
+      sidebar.appendChild(section);
     }
 
-    addChips(priorities, 'priorities');
-    addChips(clusters, 'clusters');
-    addChips(statuses, 'engagementStatuses');
+    addSection('Priority', priorities, 'priorities', function(v) { return v === 'UNSET' ? 'TBD' : v; });
+    addSection('Cluster', clusters, 'clusters', null);
+    addSection('Engagement Status', statuses, 'engagementStatuses', null);
   }
 
-  function syncChipState() {
-    document.querySelectorAll('#filterChips .chip').forEach(function(el) {
-      var arr = state.filters[el.dataset.filter] || [];
-      el.classList.toggle('chip--active', arr.indexOf(el.dataset.value) !== -1);
+  function syncSidebarState() {
+    var sidebar = document.getElementById('filterSidebar');
+    if (!sidebar) return;
+
+    sidebar.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+      var arr = state.filters[cb.dataset.filter] || [];
+      cb.checked = arr.indexOf(cb.dataset.value) !== -1;
     });
+
+    sidebar.querySelectorAll('.filter-section-title').forEach(function(titleEl) {
+      var filterKey = titleEl.dataset.section;
+      var count = (state.filters[filterKey] || []).length;
+      var badge = titleEl.querySelector('.filter-badge');
+      if (count > 0) {
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'filter-badge';
+          titleEl.appendChild(badge);
+        }
+        badge.textContent = count;
+      } else if (badge) {
+        badge.remove();
+      }
+    });
+
+    var hasFilters = state.filters.search ||
+      state.filters.clusters.length ||
+      state.filters.priorities.length ||
+      state.filters.engagementStatuses.length;
+
+    var clearBtn = document.getElementById('clearAllFilters');
+    if (clearBtn) clearBtn.style.display = hasFilters ? '' : 'none';
   }
 
   function wireSearch() {
@@ -514,20 +584,6 @@
         state.filters.search = input.value;
         applyFilters();
       }, 200);
-    });
-  }
-
-  function wireClearFilters() {
-    var btn = document.getElementById('clearFilters');
-    if (btn.dataset.wired) return;
-    btn.dataset.wired = '1';
-    btn.addEventListener('click', function() {
-      state.filters = { search: '', clusters: [], priorities: [], engagementStatuses: [] };
-      document.getElementById('searchInput').value = '';
-      document.querySelectorAll('#filterChips .chip--active').forEach(function(el) {
-        el.classList.remove('chip--active');
-      });
-      applyFilters();
     });
   }
 
@@ -547,8 +603,7 @@
       state.filters.priorities.length ||
       state.filters.engagementStatuses.length;
 
-    var clearBtn = document.getElementById('clearFilters');
-    if (clearBtn) clearBtn.style.display = hasFilters ? '' : 'none';
+    syncSidebarState();
 
     document.getElementById('accountsTable').innerHTML = buildTable(sorted, false);
     wireTableClicks('accountsTable', sorted);
@@ -630,7 +685,7 @@
     document.getElementById('viewAllLink').addEventListener('click', function(e) {
       e.preventDefault();
       state.filters = { search: '', clusters: [], priorities: [], engagementStatuses: [] };
-      state.chipsBuilt = false;
+      state.sidebarBuilt = false;
       navigate('accounts');
     });
 
@@ -658,7 +713,6 @@
     });
 
     wireSearch();
-    wireClearFilters();
 
     var last = localStorage.getItem('ec_last_file');
     if (last) document.getElementById('importFilename').textContent = last;
