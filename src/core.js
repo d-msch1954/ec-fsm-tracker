@@ -197,6 +197,57 @@
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  // ── Logo helpers ──────────────────────────────────────────────────────────
+
+  var DOMAIN_MAP = {
+    'slb':               'slb.com',
+    'totalenergies':     'totalenergies.com',
+    'phillips 66':       'phillips66.com',
+    'hf sinclair':       'hfsinclair.com',
+    'tc energy':         'tcenergy.com',
+    'technipfmc':        'technipfmc.com',
+    'baker hughes':      'bakerhughes.com',
+    'conocophillips':    'conocophillips.com',
+    'thyssenkrupp':      'thyssenkrupp.com',
+    'rio tinto':         'riotinto.com',
+    'exxonmobil':        'exxonmobil.com',
+    'marathon petroleum':'marathonpetroleum.com',
+    'halliburton':       'halliburton.com',
+    'chevron':           'chevron.com',
+    'suncor':            'suncor.com',
+    'equinor':           'equinor.com',
+    'enbridge':          'enbridge.com',
+    'cenovus':           'cenovus.com',
+    'citgo':             'citgo.com',
+    'oceaneering':       'oceaneering.com',
+    'nabors':            'nabors.com',
+    'weatherford':       'weatherford.com',
+    'alcoa':             'alcoa.com',
+    'acerinox':          'acerinox.com',
+  };
+
+  function inferDomain(name) {
+    if (!name) return null;
+    var key = name.toLowerCase().trim();
+    if (DOMAIN_MAP[key]) return DOMAIN_MAP[key];
+    return key.replace(/[^a-z0-9]/g, '') + '.com';
+  }
+
+  function companyInitials(name) {
+    if (!name) return '?';
+    var words = name.trim().split(/\s+/).filter(Boolean);
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+
+  function nameToColor(name) {
+    var hash = 0, s = name || '?';
+    for (var i = 0; i < s.length; i++) {
+      hash = ((hash << 5) - hash) + s.charCodeAt(i); hash |= 0;
+    }
+    return 'hsl(' + (Math.abs(hash) % 360) + ',50%,38%)';
+  }
+
   // ── Public API ────────────────────────────────────────────────────────────
 
   return {
@@ -207,6 +258,9 @@
     sortAccounts:    sortAccounts,
     extractEmails:   extractEmails,
     formatDate:      formatDate,
+    inferDomain:     inferDomain,
+    companyInitials: companyInitials,
+    nameToColor:     nameToColor,
     STALENESS_DAYS:  STALENESS_DAYS,
   };
 });
