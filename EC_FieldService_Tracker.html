@@ -289,19 +289,117 @@ body {
 .accounts-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
 .record-count { font-size: 13px; color: var(--muted); }
 
-.toolbar {
+/* ── Accounts layout (sidebar + table) ─────────────────────────────── */
+.accounts-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.filter-sidebar {
+  width: 200px;
+  min-width: 200px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
+}
+
+.filter-sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.filter-sidebar-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.filter-clear-all {
+  font-size: 11px;
+  color: var(--green);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  font-weight: 600;
+  display: none;
+}
+.filter-clear-all:hover { text-decoration: underline; }
+
+.filter-section { margin-bottom: 18px; }
+.filter-section:last-child { margin-bottom: 0; }
+
+.filter-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--green);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+}
+
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 0;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  border-radius: 4px;
+  user-select: none;
+}
+.filter-check:hover { color: var(--green); }
+.filter-check input[type="checkbox"] {
+  accent-color: var(--green);
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.accounts-main { flex: 1; min-width: 0; }
+
+/* ── Company logo / avatar ──────────────────────────────────────────── */
+.company-cell {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
 }
+
 .search-input {
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 13px;
-  width: 260px;
+  width: 100%;
   outline: none;
   background: var(--surface);
   font-family: inherit;
@@ -310,39 +408,7 @@ body {
 .search-input:focus { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-tint); }
 .search-input::placeholder { color: var(--muted); }
 
-.filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.chip {
-  padding: 5px 12px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  font-size: 12px;
-  cursor: pointer;
-  background: var(--surface);
-  color: var(--text);
-  user-select: none;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
-  font-family: inherit;
-}
-.chip:hover { border-color: var(--green); }
-.chip--active {
-  background: var(--green-tint);
-  border-color: var(--green);
-  color: var(--green);
-  font-weight: 600;
-}
 
-.btn-clear-filters {
-  padding: 5px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  background: transparent;
-  color: var(--muted);
-  font-family: inherit;
-  transition: border-color 0.15s, color 0.15s;
-}
-.btn-clear-filters:hover { border-color: var(--text); color: var(--text); }
 
 /* ── Table ──────────────────────────────────────────────────────────── */
 .data-table {
@@ -599,7 +665,7 @@ body {
 
 /* ── Print ──────────────────────────────────────────────────────────── */
 @media print {
-  .sidebar, .detail-panel, .toast, .toolbar, .btn-import { display: none !important; }
+  .sidebar, .detail-panel, .toast, .btn-import { display: none !important; }
   body { overflow: visible; height: auto; }
   .main { margin: 0 !important; padding: 16px; height: auto; overflow: visible; }
   .app { display: block; height: auto; }
@@ -668,12 +734,13 @@ body {
         <h1 class="view-title">Accounts</h1>
         <span class="record-count" id="recordCount"></span>
       </div>
-      <div class="toolbar">
-        <input class="search-input" id="searchInput" type="text" placeholder="Search accounts, POCs, status…">
-        <div class="filter-chips" id="filterChips"></div>
-        <button class="btn-clear-filters" id="clearFilters" style="display:none">✕ Clear filters</button>
+      <input class="search-input" id="searchInput" type="text" placeholder="Search accounts, POCs, status…" style="margin-bottom:16px;width:100%">
+      <div class="accounts-layout">
+        <aside class="filter-sidebar" id="filterSidebar"></aside>
+        <div class="accounts-main">
+          <div id="accountsTable"></div>
+        </div>
       </div>
-      <div id="accountsTable"></div>
     </div>
 
     <div class="view" id="view-alliances" style="display:none">
@@ -920,6 +987,57 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  // ── Logo helpers ──────────────────────────────────────────────────────────
+
+  var DOMAIN_MAP = {
+    'slb':               'slb.com',
+    'totalenergies':     'totalenergies.com',
+    'phillips 66':       'phillips66.com',
+    'hf sinclair':       'hfsinclair.com',
+    'tc energy':         'tcenergy.com',
+    'technipfmc':        'technipfmc.com',
+    'baker hughes':      'bakerhughes.com',
+    'conocophillips':    'conocophillips.com',
+    'thyssenkrupp':      'thyssenkrupp.com',
+    'rio tinto':         'riotinto.com',
+    'exxonmobil':        'exxonmobil.com',
+    'marathon petroleum':'marathonpetroleum.com',
+    'halliburton':       'halliburton.com',
+    'chevron':           'chevron.com',
+    'suncor':            'suncor.com',
+    'equinor':           'equinor.com',
+    'enbridge':          'enbridge.com',
+    'cenovus':           'cenovus.com',
+    'citgo':             'citgo.com',
+    'oceaneering':       'oceaneering.com',
+    'nabors':            'nabors.com',
+    'weatherford':       'weatherford.com',
+    'alcoa':             'alcoa.com',
+    'acerinox':          'acerinox.com',
+  };
+
+  function inferDomain(name) {
+    if (!name) return null;
+    var key = name.toLowerCase().trim();
+    if (DOMAIN_MAP[key]) return DOMAIN_MAP[key];
+    return key.replace(/[^a-z0-9]/g, '') + '.com';
+  }
+
+  function companyInitials(name) {
+    if (!name) return '?';
+    var words = name.trim().split(/\s+/).filter(Boolean);
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+
+  function nameToColor(name) {
+    var hash = 0, s = name || '?';
+    for (var i = 0; i < s.length; i++) {
+      hash = ((hash << 5) - hash) + s.charCodeAt(i); hash |= 0;
+    }
+    return 'hsl(' + (Math.abs(hash) % 360) + ',50%,38%)';
+  }
+
   // ── Public API ────────────────────────────────────────────────────────────
 
   return {
@@ -930,6 +1048,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     sortAccounts:    sortAccounts,
     extractEmails:   extractEmails,
     formatDate:      formatDate,
+    inferDomain:     inferDomain,
+    companyInitials: companyInitials,
+    nameToColor:     nameToColor,
     STALENESS_DAYS:  STALENESS_DAYS,
   };
 });
@@ -953,7 +1074,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       engagementStatuses: [],
     },
     sort: { field: 'company', dir: 'asc' },
-    chipsBuilt:        false,
+    sidebarBuilt:      false,
   };
 
   // ── Utility ───────────────────────────────────────────────────────────────
@@ -1002,6 +1123,24 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       return '<span class="pill" style="background:#FEE2E2;color:#991B1B">' + esc(val) + '</span>';
     }
     return '<span style="color:var(--muted);font-size:12px">' + esc(val) + '</span>';
+  }
+
+  function logoHtml(company, size) {
+    size = size || 32;
+    var domain   = EC.inferDomain(company);
+    var initials = EC.companyInitials(company);
+    var color    = EC.nameToColor(company);
+    var avatarCss = 'width:' + size + 'px;height:' + size + 'px;border-radius:6px;background:' + color +
+      ';color:#fff;display:inline-flex;align-items:center;justify-content:center;' +
+      'font-size:' + Math.round(size * 0.38) + 'px;font-weight:700;flex-shrink:0;letter-spacing:-0.5px';
+    var avatarHtml = '<span style="' + avatarCss + '">' + esc(initials) + '</span>';
+    if (!domain) return avatarHtml;
+    return '<img src="https://logo.clearbit.com/' + esc(domain) + '"' +
+      ' style="width:' + size + 'px;height:' + size + 'px;border-radius:6px;object-fit:contain;' +
+      'background:#fff;border:1px solid var(--border);flex-shrink:0"' +
+      ' loading="lazy" alt=""' +
+      ' onerror="this.onerror=null;this.outerHTML=this.dataset.fb"' +
+      ' data-fb="' + esc(avatarHtml) + '">';
   }
 
   function priorityPill(p) {
@@ -1058,7 +1197,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         }
         state.accounts  = parsed.accounts;
         state.alliances = parsed.alliances;
-        state.chipsBuilt = false;
+        state.sidebarBuilt = false;
         localStorage.setItem('ec_last_file', file.name);
         document.getElementById('importFilename').textContent = file.name;
         enableNav();
@@ -1162,7 +1301,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       : '';
 
     document.getElementById('panelBody').innerHTML =
-      '<div class="panel-company">' + esc(account.company) + '</div>' +
+      '<div class="company-cell" style="gap:12px;margin-bottom:8px">' +
+        logoHtml(account.company, 40) +
+        '<div class="panel-company" style="margin-bottom:0">' + esc(account.company) + '</div>' +
+      '</div>' +
       '<div class="panel-badges">' +
         '<span class="' + clusterTag(account.cluster) + '">' + esc(account.cluster || '—') + '</span>' +
         priorityPill(account.priority) +
@@ -1217,6 +1359,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         }
         if (c === 'lastUpdated') {
           return '<td>' + esc(EC.formatDate(a.lastUpdated)) + '</td>';
+        }
+        if (c === 'company') {
+          return '<td><div class="company-cell">' + logoHtml(a.company, 32) + '<span>' + esc(a.company || '—') + '</span></div></td>';
         }
         return '<td>' + esc(a[c] || '—') + '</td>';
       }).join('');
@@ -1362,7 +1507,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
           if (key === 'clusters')            state.filters.clusters            = [val];
           else if (key === 'priorities')     state.filters.priorities          = [val];
           else if (key === 'engagementStatuses') state.filters.engagementStatuses = [val];
-          state.chipsBuilt = false;
+          state.sidebarBuilt = false;
           navigate('accounts');
         }
       });
@@ -1381,64 +1526,110 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   // ── Accounts view ─────────────────────────────────────────────────────────
 
   function renderAccounts() {
-    buildFilterChips();
-    syncChipState();
+    buildFilterSidebar();
+    syncSidebarState();
     document.getElementById('searchInput').value = state.filters.search;
     applyFilters();
   }
 
-  function buildFilterChips() {
-    if (state.chipsBuilt) return;
-    state.chipsBuilt = true;
-    var chips = document.getElementById('filterChips');
-    chips.innerHTML = '';
+  function buildFilterSidebar() {
+    if (state.sidebarBuilt) return;
+    state.sidebarBuilt = true;
+    var sidebar = document.getElementById('filterSidebar');
+    sidebar.innerHTML = '';
 
     var priorities = ['HIGH', 'MEDIUM', 'LOW', 'UNSET'];
-
-    var clusters = [];
-    var statuses = [];
+    var clusters = [], statuses = [];
     var seenC = {}, seenS = {};
     state.accounts.forEach(function(a) {
-      if (a.cluster && !seenC[a.cluster]) {
-        seenC[a.cluster] = true;
-        clusters.push(a.cluster);
-      }
-      if (a.engagementStatus && !seenS[a.engagementStatus]) {
-        seenS[a.engagementStatus] = true;
-        statuses.push(a.engagementStatus);
-      }
+      if (a.cluster && !seenC[a.cluster]) { seenC[a.cluster] = true; clusters.push(a.cluster); }
+      if (a.engagementStatus && !seenS[a.engagementStatus]) { seenS[a.engagementStatus] = true; statuses.push(a.engagementStatus); }
     });
     clusters.sort();
     statuses.sort();
 
-    function addChips(values, filterKey) {
+    var header = document.createElement('div');
+    header.className = 'filter-sidebar-header';
+    header.innerHTML = '<span class="filter-sidebar-title">Filters</span>' +
+      '<button class="filter-clear-all" id="clearAllFilters">Clear all</button>';
+    sidebar.appendChild(header);
+
+    document.getElementById('clearAllFilters').addEventListener('click', function() {
+      state.filters = { search: '', clusters: [], priorities: [], engagementStatuses: [] };
+      document.getElementById('searchInput').value = '';
+      syncSidebarState();
+      applyFilters();
+    });
+
+    function addSection(title, values, filterKey, labelFn) {
+      var section = document.createElement('div');
+      section.className = 'filter-section';
+      var titleEl = document.createElement('div');
+      titleEl.className = 'filter-section-title';
+      titleEl.dataset.section = filterKey;
+      titleEl.textContent = title;
+      section.appendChild(titleEl);
+
       values.forEach(function(v) {
-        var el = document.createElement('button');
-        el.className = 'chip';
-        el.textContent = v === 'UNSET' ? 'TBD' : v;
-        el.dataset.value = v;
-        el.dataset.filter = filterKey;
-        el.addEventListener('click', function() {
+        var label = document.createElement('label');
+        label.className = 'filter-check';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.dataset.value = v;
+        cb.dataset.filter = filterKey;
+        cb.addEventListener('change', function() {
           var arr = state.filters[filterKey];
           var idx = arr.indexOf(v);
-          if (idx === -1) arr.push(v); else arr.splice(idx, 1);
-          el.classList.toggle('chip--active', arr.indexOf(v) !== -1);
+          if (cb.checked && idx === -1) arr.push(v);
+          else if (!cb.checked && idx !== -1) arr.splice(idx, 1);
+          syncSidebarState();
           applyFilters();
         });
-        chips.appendChild(el);
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(labelFn ? labelFn(v) : v));
+        section.appendChild(label);
       });
+
+      sidebar.appendChild(section);
     }
 
-    addChips(priorities, 'priorities');
-    addChips(clusters, 'clusters');
-    addChips(statuses, 'engagementStatuses');
+    addSection('Priority', priorities, 'priorities', function(v) { return v === 'UNSET' ? 'TBD' : v; });
+    addSection('Cluster', clusters, 'clusters', null);
+    addSection('Engagement Status', statuses, 'engagementStatuses', null);
   }
 
-  function syncChipState() {
-    document.querySelectorAll('#filterChips .chip').forEach(function(el) {
-      var arr = state.filters[el.dataset.filter] || [];
-      el.classList.toggle('chip--active', arr.indexOf(el.dataset.value) !== -1);
+  function syncSidebarState() {
+    var sidebar = document.getElementById('filterSidebar');
+    if (!sidebar) return;
+
+    sidebar.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+      var arr = state.filters[cb.dataset.filter] || [];
+      cb.checked = arr.indexOf(cb.dataset.value) !== -1;
     });
+
+    sidebar.querySelectorAll('.filter-section-title').forEach(function(titleEl) {
+      var filterKey = titleEl.dataset.section;
+      var count = (state.filters[filterKey] || []).length;
+      var badge = titleEl.querySelector('.filter-badge');
+      if (count > 0) {
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'filter-badge';
+          titleEl.appendChild(badge);
+        }
+        badge.textContent = count;
+      } else if (badge) {
+        badge.remove();
+      }
+    });
+
+    var hasFilters = state.filters.search ||
+      state.filters.clusters.length ||
+      state.filters.priorities.length ||
+      state.filters.engagementStatuses.length;
+
+    var clearBtn = document.getElementById('clearAllFilters');
+    if (clearBtn) clearBtn.style.display = hasFilters ? '' : 'none';
   }
 
   function wireSearch() {
@@ -1452,20 +1643,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         state.filters.search = input.value;
         applyFilters();
       }, 200);
-    });
-  }
-
-  function wireClearFilters() {
-    var btn = document.getElementById('clearFilters');
-    if (btn.dataset.wired) return;
-    btn.dataset.wired = '1';
-    btn.addEventListener('click', function() {
-      state.filters = { search: '', clusters: [], priorities: [], engagementStatuses: [] };
-      document.getElementById('searchInput').value = '';
-      document.querySelectorAll('#filterChips .chip--active').forEach(function(el) {
-        el.classList.remove('chip--active');
-      });
-      applyFilters();
     });
   }
 
@@ -1485,8 +1662,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       state.filters.priorities.length ||
       state.filters.engagementStatuses.length;
 
-    var clearBtn = document.getElementById('clearFilters');
-    if (clearBtn) clearBtn.style.display = hasFilters ? '' : 'none';
+    syncSidebarState();
 
     document.getElementById('accountsTable').innerHTML = buildTable(sorted, false);
     wireTableClicks('accountsTable', sorted);
@@ -1568,7 +1744,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     document.getElementById('viewAllLink').addEventListener('click', function(e) {
       e.preventDefault();
       state.filters = { search: '', clusters: [], priorities: [], engagementStatuses: [] };
-      state.chipsBuilt = false;
+      state.sidebarBuilt = false;
       navigate('accounts');
     });
 
@@ -1596,7 +1772,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     });
 
     wireSearch();
-    wireClearFilters();
 
     var last = localStorage.getItem('ec_last_file');
     if (last) document.getElementById('importFilename').textContent = last;
