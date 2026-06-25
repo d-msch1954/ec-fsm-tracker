@@ -76,7 +76,7 @@
       'font-size:' + Math.round(size * 0.38) + 'px;font-weight:700;flex-shrink:0;letter-spacing:-0.5px';
     var avatarHtml = '<span style="' + avatarCss + '">' + esc(initials) + '</span>';
     if (!domain) return avatarHtml;
-    return '<img src="https://logo.clearbit.com/' + esc(domain) + '"' +
+    return '<img src="https://www.google.com/s2/favicons?domain=' + esc(domain) + '&sz=64"' +
       ' style="width:' + size + 'px;height:' + size + 'px;border-radius:6px;object-fit:contain;' +
       'background:#fff;border:1px solid var(--border);flex-shrink:0"' +
       ' loading="lazy" alt=""' +
